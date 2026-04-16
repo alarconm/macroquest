@@ -12,7 +12,7 @@ env:
 
 jobs:
   build:
-    if: github.repository == 'macroquest/macroquest'
+    if: true
     runs-on: windows-latest
     steps:
       - name: Checkout code
