@@ -5,6 +5,53 @@ on:
 
 jobs:
   build:
-    uses: ./.github/workflows/ci_shared.yaml
-    with:
-      client_target: live
+    runs-on: windows-latest
+    env:
+      platform: x64
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Sync submodule URLs
+        run: git submodule sync --recursive
+
+      - name: Checkout submodules excluding eqlib
+        run: git -c submodule."src/eqlib".update=none submodule update --init --recursive --depth=1
+
+      - name: Checkout live eqlib
+        run: |
+          git submodule update --init --remote "src\eqlib"
+          git -C src/eqlib checkout live
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v3
+        with:
+          msbuild-architecture: x64
+
+      - name: vcpkg Cache
+        id: cache-vcpkg
+        uses: actions/cache@v5
+        with:
+          path: |
+            contrib/vcpkg/buildtrees
+            contrib/vcpkg/downloads
+            contrib/vcpkg/installed
+            contrib/vcpkg/packages
+            contrib/vcpkg/vcpkg.exe
+            contrib/vcpkg/vcpkg_mq_last_bootstrap*.txt
+          key: ${{ runner.os }}-vcpkg-x64-${{ github.run_id }}
+          restore-keys: |
+            ${{ runner.os }}-vcpkg-x64-
+            ${{ runner.os }}-vcpkg-
+
+      - name: Build x64 Release
+        run: msbuild src/MacroQuest.sln /NoLogo /Verbosity:minimal /p:Configuration=Release /p:Platform=x64
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: macroquest-live-x64
+          path: |
+            build/bin/Release/*.exe
+            build/bin/Release/*.dll
+            build/bin/Release/resources/**
