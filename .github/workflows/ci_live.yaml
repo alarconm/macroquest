@@ -18,10 +18,10 @@ jobs:
       - name: Checkout submodules excluding eqlib
         run: git -c submodule."src/eqlib".update=none submodule update --init --recursive --depth=1
 
-      - name: Checkout live eqlib
+      - name: Checkout live eqlib from fork
         run: |
-          git submodule update --init --remote "src\eqlib"
-          git -C src/eqlib checkout live
+          rm -Recurse -Force src/eqlib -ErrorAction SilentlyContinue
+          git clone --branch live --depth=1 https://github.com/alarconm/eqlib.git src/eqlib
 
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v3
